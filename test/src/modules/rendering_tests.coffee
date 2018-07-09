@@ -130,6 +130,61 @@ renderingTest "error pages", (assert, session, done) ->
       assert.equal(session.element.document.body.textContent, "Not found")
       done()
 
+renderingTest "entire body is swapped on typical render", (assert, session, done) ->
+  oldBody = session.element.document.body
+  session.clickSelector "#same-origin-link", ->
+    session.waitForEvent "turbolinks:render", ->
+      newBody = session.element.document.body
+      assert.notEqual newBody, oldBody
+      done()
+
+renderingTest "entire body is swapped when only new page has root element", (assert, session, done) ->
+  oldBody = session.element.document.body
+  session.clickSelector "#root-element-link", ->
+    session.waitForEvent "turbolinks:render", ->
+      newBody = session.element.document.body
+      assert.notEqual newBody, oldBody
+      done()
+
+renderingTest "entire body is swapped when only old page has root element", (assert, session, done) ->
+  session.clickSelector "#root-element-link", ->
+    session.waitForEvent "turbolinks:load", ->
+      rootElementOneBody = session.element.document.body
+      assert.equal rootElementOneBody.querySelector("h1").textContent, "Root element one"
+      session.clickSelector "#home-link", ->
+        session.waitForEvent "turbolinks:load", ->
+          homeBody = session.element.document.body
+          assert.notEqual rootElementOneBody, homeBody
+          done()
+
+renderingTest "only root element is swapped between root element pages", (assert, session, done) ->
+  session.clickSelector "#root-element-link", ->
+    session.waitForEvent "turbolinks:load", ->
+      rootElementOneBody = session.element.document.body
+      assert.equal rootElementOneBody.querySelector("h1").textContent, "Root element one"
+      session.clickSelector "#root-element-link", ->
+        session.waitForEvent "turbolinks:load", ->
+          rootElementTwoBody = session.element.document.body
+          assert.equal rootElementOneBody, rootElementTwoBody
+          assert.equal rootElementTwoBody.querySelector("h1").textContent, "Root element two"
+          assert.equal rootElementTwoBody.querySelector("footer").textContent, "Footer from page one"
+          done()
+
+renderingTest "permanent elements are kept between root element pages", (assert, session, done) ->
+  session.clickSelector "#root-element-link", ->
+    session.waitForEvent "turbolinks:load", ->
+      rootElementOneBody = session.element.document.body
+      assert.equal rootElementOneBody.querySelector("h1").textContent, "Root element one"
+      permanentParagraph1 = rootElementOneBody.querySelector("#perm-graph")
+      permanentParagraph1.innerHTML = "Keep this pls"
+      session.clickSelector "#root-element-link", ->
+        session.waitForEvent "turbolinks:load", ->
+          rootElementTwoBody = session.element.document.body
+          permanentParagraph2 = rootElementOneBody.querySelector("#perm-graph")
+          assert.equal permanentParagraph1, permanentParagraph2
+          assert.equal permanentParagraph2.textContent, "Keep this pls"
+          done()
+
 getAssetElements = (document = document) ->
   selectChildren document.head, (el) -> match(el, "script, style, link[rel=stylesheet]")
 
