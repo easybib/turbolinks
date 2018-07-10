@@ -61,7 +61,15 @@ class Turbolinks.SnapshotRenderer extends Turbolinks.Renderer
       replaceableElement.parentNode.replaceChild(element, replaceableElement)
 
   assignNewBody: ->
-    document.body = @newBody
+    existingRootElement = getRootElementOf document.body
+    newRootElement = getRootElementOf @newBody
+    if newRootElement and existingRootElement
+      existingRootElement.parentNode.replaceChild(
+        newRootElement,
+        existingRootElement
+      )
+    else
+      document.body = @newBody
 
   focusFirstAutofocusableElement: ->
     @findFirstAutofocusableElement()?.focus()
@@ -89,3 +97,6 @@ class Turbolinks.SnapshotRenderer extends Turbolinks.Renderer
 
   findFirstAutofocusableElement: ->
     document.body.querySelector("[autofocus]")
+
+getRootElementOf = (node) ->
+  node?.querySelector '[data-turbolinks-root]'
